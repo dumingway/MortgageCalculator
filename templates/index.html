@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <title>房贷计算器V1.0</title>
+</head>
+<body>
+    <script src="/static/js/jquery-3.5.1.min.js"></script>
+    <script src="/static/js/popper.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+
+    <h1 style="background-color: antiquewhite;color: black;text-align: center;">欢迎使用房贷计算器V1.0</h1>
+
+    <div class="container">
+        <form class="form-calculator" role="form" action="/calculator/" method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <div class="row">
+                <div class="col-sm-2 col-md-2 col-lg-2 control-label">
+                    <label for="id_totalLoan" >贷款总额(万)</label>
+                </div>
+                <div class="col-sm-10 col-md-10 col-lg-10 ">
+                    <input type="text" name='totalLoan' class="form-control" id="id_totalLoan" maxlength="12" placeholder="请输入您的贷款总额" autofocus required>
+                </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-md-2 col-md-offset-2">
+                        <label class="radio-inline">
+                        <input type="radio" name="optionsRadiosInline" id="optionsRadios1" value="1" checked> 商业贷款
+                        </label>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="radio-inline">
+                        <input type="radio" name="optionsRadiosInline" id="optionsRadios2"  value="2"> 公积金贷款
+                        </label>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="radio-inline">
+                        <input type="radio" name="optionsRadiosInline" id="optionsRadios3"  value="3"> 组合贷款
+                        </label>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-sm-2">
+                        <label for="repaymentMode">还款方式</label>
+                    </div>
+                    <div class="col-sm-10">
+                        <select class="form-control" name="repaymentMode" id="repaymentMode">
+                        <option value="1">等额本息(每月等额还款)</option>
+                        <option value="2">等额本金(每月递减还款)</option>
+                        </select>
+                    </div>
+
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="row">
+                <div class="col-sm-2">
+                    <label for="repaymentPeriod">还款年数</label>
+                </div>
+                <div class="col-sm-10">
+                <select class="form-control" name="repaymentPeriod" id="repaymentPeriod">
+                    {% for item in data %}
+                        {% ifnotequal item.year 20 %}
+                            <option value="{{ item.year }}">{{ item.year }}年({{ item.month }}个月)</option>
+                        {% else %}
+                           <option value="{{ item.year }}" selected="selected">{{ item.year }}年({{ item.month }}个月)</option>
+                        {% endifnotequal %}
+                    {% endfor %}
+                </select>
+                </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-sm-2">
+                        <label for="repaymentDate">首次还款日期</label>
+                    </div>
+                    <div class="col-sm-10">
+                        <input id="repaymentDate" name="repaymentDate" type="date" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-sm-2">
+                        <label for="interestRateStandard">利率标准</label>
+                    </div>
+                    <div class="col-sm-10">
+                        <select class="form-control" id="interestRateStandard">
+                        <option value="1">LPR</option>
+                        <option value="2">基准利率</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div id="lpr_option_content">
+            <div class="form-group">
+               <div class="row">
+                    <div class="col-sm-2">
+                        <label for="idLPR">LPR(%)</label>
+                    </div>
+                    <div class="col-sm-10">
+                        <input type="text" name='idLPR' class="form-control" id="idLPR" maxlength="8" placeholder="4.65" required>
+                    </div>
+               </div>
+            </div>
+
+            <div class="form-group">
+               <div class="row">
+                    <div class="col-sm-2">
+                        <label for="basePoint">基点(‱)</label>
+                    </div>
+                    <div class="col-sm-10">
+                        <input type="text" name='basePoint' class="form-control" id="basePoint" maxlength="4" placeholder="0" required>
+                    </div>
+               </div>
+            </div>
+
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-sm-2">
+                        <label for="loanInterestRate">贷款利率</label>
+                    </div>
+                    <div class="col-sm-10" id="showLIR">
+                        <p>4.65% + 0‱ = 4.65%</p>
+                    </div>
+                </div>
+            </div>
+            </div>
+            <div id="base_option_content" style="display: none">
+                <div class="form-group">
+                    <div class="row">
+                        <div class="col-sm-2">
+                            <label for="loanInterestRate">贷款利率</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                    <button type="submit" class="btn btn-primary float-right">开始计算</button>
+            </div>
+        </form>
+    </div>
+ <script>
+        $(document).ready(function(){
+            function showLIR_fuc(){
+                let $a = $("#idLPR").val();
+                let $b = $("#basePoint").val();
+                let $c = Number($a) +Number($b)*0.01;
+                let htmlText = "<p>" + $a +"% + "+$b + "‱ = " + $c.toFixed(4) +"%</p>";
+                $("#showLIR").html(htmlText);
+            }
+            //隐藏div
+            $("#lpr_option_content").show();
+            $("#base_option_content").hide();
+            let date = new Date();
+            let seperator = "-";
+            let year = date.getFullYear();
+            let month = date.getMonth();
+            let strDate = date.getDate();
+            if(month>=1 && month<=9){
+                month = "0" + month;
+            }
+            if(strDate>=0 && strDate<=9){
+                strDate = "0" +strDate;
+            }
+            let currentDate = year + seperator + month +seperator + strDate;
+            $("#repaymentDate").val(currentDate);
+            $("#interestRateStandard").change(function(){
+                if($(this).val()==1){
+                    $("#lpr_option_content").show();
+                    $("#base_option_content").hide();
+                }
+                else if($(this).val()==2){
+                    $("#lpr_option_content").hide();
+                    $("#base_option_content").show();
+                }
+            $("p").hide();
+            });
+            $("#idLPR, #basePoint").bind('input propertychange',showLIR_fuc );
+            $("#idLPR").bind('keyup', function(){
+                this.value = this.value.replace(/[^\d.]/g,""); //清除"数字"和"."以外的字符
+                this.value = this.value.replace(/^\./g,""); //验证第一个字符是数字
+                this.value = this.value.replace(/\.{2,}/g,"."); //只保留第一个, 清除多余的
+                this.value = this.value.replace(".","$#$").replace(/\./g,"").replace("$#$",".");
+                this.value = this.value.replace(/^(\d+)\.(\d\d\d\d).*$/,'$1.$2'); //只能输入4个小数
+            });
+            $("#id_totalLoan, #basePoint").bind('keyup', function(){
+                this.value = this.value.replace(/[^\d.]/g,""); //清除"数字"和"."以外的字符
+                this.value = this.value.replace(/^\./g,""); //验证第一个字符是数字
+                this.value = this.value.replace(/\.{2,}/g,"."); //只保留第一个, 清除多余的
+                this.value = this.value.replace(".","$#$").replace(/\./g,"").replace("$#$",".");
+                this.value = this.value.replace(/^(\d+)\.(\d\d).*$/,'$1.$2'); //只能输入2个小数
+            });
+
+        });
+
+</script>
+</body>
+
+</html>
